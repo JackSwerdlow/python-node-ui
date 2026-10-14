@@ -1,0 +1,237 @@
+:root {
+  --canvas: #e6eaed;
+  --panel: #f4f6f7;
+  --surface: #ffffff;
+  --line: #bcc6cd;
+  --ink: #1d262d;
+  --muted: #5b6873;
+  --accent: #2f5d8a;
+  --error: #b3261e;
+  --ok: #2e7d4f;
+  --font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, "SF Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font: 14px / 1.4 var(--font);
+  color: var(--ink);
+  background: var(--canvas);
+}
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  height: 100%;
+}
+main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* palette */
+.palette {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 16px 12px;
+  overflow-y: auto;
+}
+.palette h1 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+.palette-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+.palette-item:hover {
+  background: #e2e7ea;
+}
+
+/* toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.toolbar button {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.toolbar button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.toolbar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.react-flow {
+  flex: 1;
+}
+
+/* node */
+.node {
+  position: relative;
+  min-width: 220px;
+  max-width: 340px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.node.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.node.status-ok::before,
+.node.status-error::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  bottom: -1px;
+  width: 4px;
+  border-radius: 6px 0 0 6px;
+  background: var(--ok);
+}
+.node.status-error::before {
+  background: var(--error);
+}
+.node.status-skipped {
+  opacity: 0.6;
+}
+.node header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 6px 6px 0 0;
+  font-weight: 600;
+}
+
+.rows {
+  padding: 4px 0;
+}
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+}
+.row-out {
+  justify-content: flex-end;
+}
+.type {
+  font: 11px var(--mono);
+  color: var(--muted);
+}
+.row .type {
+  margin-left: auto;
+}
+.row-out .type {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.socket {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--surface);
+  background: var(--accent);
+}
+.row .react-flow__handle-left {
+  left: -6px;
+}
+.row .react-flow__handle-right {
+  right: -6px;
+}
+
+.fields {
+  display: grid;
+  gap: 6px;
+  padding: 6px 10px 8px;
+}
+.field {
+  display: grid;
+  gap: 2px;
+}
+.field span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.field-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.field input[type="text"],
+.field input[type="number"] {
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+}
+
+.message {
+  margin: 4px 10px;
+  font-size: 12px;
+}
+.message.error {
+  color: var(--error);
+}
+.toolbar .message {
+  margin: 0;
+}
+.output {
+  margin: 0;
+  padding: 8px 10px;
+  max-height: 240px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  font: 12px / 1.4 var(--mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}

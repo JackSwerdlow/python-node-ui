@@ -1,0 +1,4 @@
+{
+  "input": {"fn": "text", "args": {"text": "a,b,c"}, "pos": [0, 0]},
+  "split": {"fn": "split_text", "args": {"text": {"ref": "input"}}, "pos": [320, 0]}
+}

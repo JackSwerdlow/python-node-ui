@@ -1,0 +1,12 @@
+__pycache__/
+.pytest_cache/
+node_modules/
+nodeui/dist/
+.venv/
+.mypy_cache/
+.ruff_cache/
+
+# custom_nodes/ is yours: only the example is tracked
+/custom_nodes/*
+!/custom_nodes/example/
+.vscode/

@@ -1,0 +1,40 @@
+[project]
+name = "python-node-ui"
+version = "0.1.0"
+requires-python = ">=3.13"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+namespace-packages = ["nodes", "custom_nodes", "custom_nodes/example"]
+
+[tool.ruff.format]
+docstring-code-format = true
+line-ending = "lf"
+preview = true
+
+[tool.ruff.lint]
+preview = true
+select = ["ALL"]
+ignore = [
+    "missing-trailing-comma",
+    "missing-copyright-notice",
+    "docstring-missing-returns",
+    "docstring-missing-exception",
+    "suspicious-subprocess-import",
+    "subprocess-without-shell-equals-true",
+    "start-process-with-partial-path",
+    "print",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+strict = true
+files = ["main.py", "nodecore", "nodes", "custom_nodes"]
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
