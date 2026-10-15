@@ -9,6 +9,28 @@ Turn plain Python functions into nodes, wire them up on a canvas, run the graph.
 
 `nodeui/` and `custom_nodes/` can be deleted without breaking headless runs.
 
+## How node code works
+
+The aim: any Python code, drawn as nodes (and nodes back to Python eventually).
+
+Python code is words arranged by syntax: the words name things and hold values, and the syntax around them, line
+order and indentation, gives the structure (this is an assignment, this a call, this a class). Nodes split the
+same way:
+
+- **An outer box is structure.** What it is (an assignment, a call, later a `def` or a `class`) and how the boxes
+  inside it relate. It's what syntax and indentation are to Python.
+- **An inner box is a typed slot.** Its type (str, int, float, bool) picks how you fill it: a text box, a number
+  box, a toggle. It holds a value, or a wire.
+- **A wire is a name used again.** It carries what one box makes into a slot of another, like writing a variable's
+  name where it's needed. One wire = one use of the name.
+- **Library code stays closed.** Registering a function is like importing it: you use it, you don't see inside.
+
+So far:
+
+- **Variable**: an assignment holding one inner box. Its name and type are set in the side panel:
+  `greeting: str = "hello"`. It always has a value; a new one starts as `var_1: str = "<enter text here>"`.
+- **Function**: a call of a registered function, an inner box per parameter: `split = split_text(text=greeting)`.
+
 ## Setup
 
     uv venv && source .venv/bin/activate        # or a conda env
@@ -33,11 +55,17 @@ on http://127.0.0.1:5173.
 The UI sends this same JSON to the API when you press Run; `python main.py graph.json` runs it directly:
 
     {
-      "input": {"fn": "text", "args": {"text": "a, b"}, "pos": [0, 0]},
-      "split": {"fn": "split_text", "args": {"text": {"ref": "input"}}}
+      "greeting": {"statement": "assign", "annotation": "str", "value": "a, b", "pos": [0, 0]},
+      "split": {"fn": "split_text", "args": {"text": {"ref": "greeting"}}}
     }
 
-Each key is a node id. An argument is a plain value, or `{"ref": id}` for another node's result.
+is
+
+    greeting: str = "a, b"
+    split = split_text(text=greeting)
+
+Each key is a node id. An argument is a plain value, or `{"ref": id}` (a wire) for another node's result.
+Arguments left out use the function's defaults. `"pos"` is only for the UI.
 
 ## Add nodes
 

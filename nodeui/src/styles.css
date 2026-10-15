@@ -39,7 +39,7 @@ input:focus-visible {
 
 .app {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 200px 1fr auto;
   height: 100%;
 }
 main {
@@ -234,4 +234,118 @@ main {
   font: 12px / 1.4 var(--mono);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* a variable: one box, its value. Resized, it fills the size it's given, and a text box grows with it. */
+.node.variable {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 120px;
+  max-width: none;
+}
+.node.variable.number {
+  min-width: 80px;
+}
+.node.variable .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.node.variable .row {
+  flex: 1;
+  align-items: flex-start;
+  padding: 6px 12px 14px;
+}
+
+/* the box a variable's value is typed in */
+.field-box {
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+}
+textarea.field-box {
+  align-self: stretch;
+  font: inherit;
+  resize: none;
+  scrollbar-width: none;
+}
+input[type="number"].field-box {
+  text-align: right;
+}
+input[type="number"].field-box::-webkit-inner-spin-button {
+  opacity: 1;
+}
+
+/* a toggle: True/False, then a dot, filled when True */
+button.field-box.toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font: 12px var(--mono);
+  text-align: left;
+  cursor: pointer;
+}
+.toggle .dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+.toggle.on .dot {
+  background: var(--accent);
+}
+
+/* the corner to drag to resize a node: two diagonal lines, like a text box's */
+.react-flow__resize-control.handle.grip {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 0;
+  transform: translate(-100%, -100%);
+  background: linear-gradient(
+    135deg,
+    transparent 55%,
+    var(--muted) 55% 62%,
+    transparent 62% 78%,
+    var(--muted) 78% 85%,
+    transparent 85%
+  );
+  cursor: nwse-resize;
+  z-index: 1;
+}
+
+/* the panel for the selected node */
+.inspector {
+  width: 300px;
+  padding: 16px 14px;
+  overflow-y: auto;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  font-size: 13px;
+}
+.inspector h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.inspector h3 {
+  margin: 16px 0 6px;
+  font-size: 13px;
+}
+.inspector p {
+  margin: 4px 0;
+}
+.inspector input,
+.inspector select {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  font: inherit;
 }

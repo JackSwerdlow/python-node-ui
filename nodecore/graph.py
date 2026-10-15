@@ -1,14 +1,7 @@
-"""Run a graph of registered functions.
+"""Run a graph: variables and calls of registered functions (format: see README, Graph files).
 
-Graph format (a JSON object; the UI sends the same thing when you press Run):
-    {
-      "input": {"fn": "text", "args": {"text": "a,b"}, "pos": [0, 0]},
-      "split": {"fn": "split_text", "args": {"text": {"ref": "input"}}}
-    }
-
-Each key is a node id. An argument is a plain value, or {"ref": id} for another node's result.
-Missing arguments fall back to the function's defaults. "pos" is only used by the UI.
-A node that fails is marked "error" and the nodes after it "skipped". A loop raises graphlib.CycleError.
+Nodes run after the nodes wired into them. A node that fails is marked "error" and the nodes after it "skipped". A
+loop raises graphlib.CycleError.
 """
 
 from dataclasses import dataclass
@@ -45,13 +38,20 @@ def run_graph(graph: Graph) -> dict[str, NodeResult]:
 
 
 def _run_node(node: dict[str, Any], results: dict[str, NodeResult]) -> NodeResult:
-    """Check prior nodes succeeded, find registered function, build args and then call it."""
+    """Check prior nodes succeeded; then a variable gives its value, a function node is called with its args."""
     connections = _find_connections(node)
 
     for node_id in connections.values():
         result = results.get(node_id)
         if result is None or result.status != "ok":
             return NodeResult("skipped", error="An input node failed or is missing")
+
+    # Variable assignment (eqv. my_var = "hello")
+    if node.get("statement") == "assign":
+        value = node.get("value")
+        if node.get("annotation") == "float" and type(value) is int:
+            value = float(value)
+        return NodeResult("ok", value)
 
     fn_name = node.get("fn", "")
     fn = REGISTRY.get(fn_name)

@@ -21,7 +21,19 @@ export interface RunResult {
   error: string | null;
 }
 
-/** A graph: what the UI sends to /api/run. See nodecore/graph.py. */
-export type GraphFile = Record<string, { fn: string; args?: Record<string, unknown>; pos?: [number, number] }>;
+/** A graph: what the UI sends to /api/run. Per node, a variable or a function call; see README, Graph files. */
+export type GraphFile = Record<
+  string,
+  | { fn: string; args?: Record<string, unknown>; pos?: [number, number] }
+  | { statement: "assign"; annotation: ValueType; value: unknown; pos?: [number, number] }
+>;
+
+/** The types a variable can have: a box to type its value in (text, a number, a toggle). */
+export type ValueType = "str" | "int" | "float" | "bool";
 
 export type FnNode = Node<{ schema: NodeSchema; values: Record<string, unknown>; result?: RunResult }, "fn">;
+
+/** A variable: `name: str = "hello"`. Its type picks the box its value is typed in. */
+export type VariableNode = Node<{ annotation: ValueType; value: unknown; result?: RunResult }, "variable">;
+
+export type AnyNode = FnNode | VariableNode;

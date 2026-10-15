@@ -1,6 +1,6 @@
 import type { Edge } from "@xyflow/react";
 import { toGraph } from "./graph";
-import type { FnNode, NodeSchema, RunResult } from "./types";
+import type { AnyNode, NodeSchema, RunResult } from "./types";
 
 export async function fetchNodes(): Promise<NodeSchema[]> {
   const res = await fetch("/api/nodes");
@@ -8,7 +8,7 @@ export async function fetchNodes(): Promise<NodeSchema[]> {
   return res.json();
 }
 
-export async function runGraph(nodes: FnNode[], edges: Edge[]): Promise<Record<string, RunResult>> {
+export async function runGraph(nodes: AnyNode[], edges: Edge[]): Promise<Record<string, RunResult>> {
   const res = await fetch("/api/run", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
