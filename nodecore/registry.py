@@ -1,7 +1,7 @@
 """Turn plain Python functions into nodes.
 
-The functions are left untouched. describe() is what the UI sees: each parameter is an input
-(no default -> a socket, has a default -> a field), and the return value is the single output.
+The functions are left untouched. describe() is what the UI sees: each parameter is an input (*args / **kwargs:
+as many as you add), and the return value is the single output.
 """
 
 import inspect
@@ -22,13 +22,16 @@ def describe(fn: Callable[..., Any]) -> dict[str, Any]:
     hints = get_type_hints(fn)
     returns = hints.get("return", Any)
     return {
-        "id": fn.__name__,
-        "description": inspect.getdoc(fn) or "",
+        "name": fn.__name__,
+        "module": fn.__module__,
+        "doc": inspect.getdoc(fn) or "",
         "inputs": [
             {
                 "name": param.name,
                 "type": _type_name(hints.get(param.name, Any)),
-                "required": param.default is param.empty,
+                "kind": param.kind.name.lower(),
+                "required": param.default is param.empty
+                and param.kind not in {param.VAR_POSITIONAL, param.VAR_KEYWORD},
                 "default": None if param.default is param.empty else param.default,
             }
             for param in inspect.signature(fn).parameters.values()

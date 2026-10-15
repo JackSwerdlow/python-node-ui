@@ -39,10 +39,11 @@ input:focus-visible {
 
 .app {
   display: grid;
-  grid-template-columns: 200px 1fr auto;
+  grid-template-columns: auto 1fr auto;
   height: 100%;
 }
 main {
+  grid-column: 2; /* its own column, even with the nodes list hidden (the panel's is 3) */
   position: relative;
   display: flex;
   flex-direction: column;
@@ -51,6 +52,7 @@ main {
 
 /* palette */
 .palette {
+  width: 200px;
   background: var(--panel);
   border-right: 1px solid var(--line);
   padding: 16px 12px;
@@ -83,6 +85,13 @@ main {
   padding: 8px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+}
+.toolbar select {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  font: inherit;
 }
 .toolbar button {
   padding: 4px 12px;
@@ -149,9 +158,6 @@ main {
   font-weight: 600;
 }
 
-.rows {
-  padding: 4px 0;
-}
 .row {
   position: relative;
   display: flex;
@@ -159,19 +165,9 @@ main {
   gap: 6px;
   padding: 3px 12px;
 }
-.row-out {
-  justify-content: flex-end;
-}
 .type {
   font: 11px var(--mono);
   color: var(--muted);
-}
-.row .type {
-  margin-left: auto;
-}
-.row-out .type {
-  margin-left: 0;
-  margin-right: auto;
 }
 
 .socket {
@@ -180,38 +176,15 @@ main {
   border: 2px solid var(--surface);
   background: var(--accent);
 }
-.row .react-flow__handle-left {
-  left: -6px;
-}
-.row .react-flow__handle-right {
-  right: -6px;
-}
 
-.fields {
-  display: grid;
-  gap: 6px;
-  padding: 6px 10px 8px;
-}
-.field {
-  display: grid;
-  gap: 2px;
-}
-.field span {
-  font-size: 12px;
-  color: var(--muted);
-}
-.field-inline {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.field input[type="text"],
-.field input[type="number"] {
-  width: 100%;
-  padding: 3px 6px;
+.slot-button {
+  padding: 0 6px;
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
 }
 
 .message {
@@ -224,20 +197,10 @@ main {
 .toolbar .message {
   margin: 0;
 }
-.output {
-  margin: 0;
-  padding: 8px 10px;
-  max-height: 240px;
-  overflow: auto;
-  border-top: 1px solid var(--line);
-  background: var(--panel);
-  font: 12px / 1.4 var(--mono);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
 
-/* a variable: one box, its value. Resized, it fills the size it's given, and a text box grows with it. */
-.node.variable {
+/* a variable or call node: resized, it fills the size it's given (a variable's text box grows with it) */
+.node.variable,
+.node.call {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -247,16 +210,81 @@ main {
 .node.variable.number {
   min-width: 80px;
 }
-.node.variable .name {
+.node .name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.node.variable .row {
+
+/* a variable's box (VarBox): a grey top with its name and type, the box its value is in below */
+.var-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.var-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--panel);
+  font-weight: 600;
+}
+.var-head:not(:last-child) {
+  border-bottom: 1px solid var(--line);
+}
+.var-head .type {
+  margin-left: auto;
+}
+.var-body {
   flex: 1;
+  display: flex;
   align-items: flex-start;
   padding: 6px 12px 14px;
+}
+.var-head > .react-flow__handle-right {
+  right: -6px;
+}
+
+/* on its own, a variable node is its box */
+.node.variable .var-box {
+  flex: 1;
+}
+.node.variable .var-head {
+  border-radius: 5px 5px 0 0; /* inside the node's 6px corners and 1px border */
+}
+
+/* inside a call node: boxes in it, their sockets on the node's edge */
+.node.call .var-box {
+  margin: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+.node.call .var-head {
+  padding: 3px 8px;
+  border-radius: 3px 3px 0 0; /* inside the box's 4px corners and 1px border */
+  font-weight: 500;
+}
+.node.call .var-head:last-child {
+  border-radius: 3px; /* no value box under it: round its bottom corners too */
+}
+.node.call .var-body {
+  padding: 6px 8px;
+}
+.node.call .var-head > .react-flow__handle-left {
+  left: -15px;
+}
+.node.call .var-head > .react-flow__handle-right {
+  right: -15px;
+}
+
+/* a call node's line between its parameters and what it returns */
+.divider {
+  margin: 4px 0;
+  border-top: 1px solid var(--line);
 }
 
 /* the box a variable's value is typed in */
@@ -273,6 +301,17 @@ textarea.field-box {
   resize: none;
   scrollbar-width: none;
 }
+/* a parameter's text box, and the greyed-out one showing text that comes in on its wire: one line to start,
+   dragged taller by its own grip, never shorter than one line */
+.node.call textarea.field-box,
+.node.call .var-box:not(.result) .field-box.wired:not(.toggle, .number) {
+  min-height: calc(1.4em + 8px);
+  resize: vertical;
+}
+.node.call .var-box:not(.result) .field-box.wired:not(.toggle, .number) {
+  height: calc(1.4em + 8px);
+  max-height: none;
+}
 input[type="number"].field-box {
   text-align: right;
 }
@@ -281,7 +320,7 @@ input[type="number"].field-box::-webkit-inner-spin-button {
 }
 
 /* a toggle: True/False, then a dot, filled when True */
-button.field-box.toggle {
+.field-box.toggle {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -323,7 +362,8 @@ button.field-box.toggle {
 
 /* the panel for the selected node */
 .inspector {
-  width: 300px;
+  grid-column: 3;
+  position: relative;
   padding: 16px 14px;
   overflow-y: auto;
   background: var(--panel);
@@ -348,4 +388,89 @@ button.field-box.toggle {
   border-radius: 3px;
   background: var(--surface);
   font: inherit;
+}
+
+/* a call node: its title tinted, and nothing in it squashed (so it can't be resized smaller than it) */
+.node.call header {
+  background: #fbefe2;
+}
+.node.call > * {
+  flex-shrink: 0;
+}
+
+/* a box greyed out: what comes in on its wire */
+.field-box.wired {
+  min-height: calc(1.4em + 8px); /* one line, its padding and border */
+  background: var(--panel);
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 120px;
+  overflow: auto;
+  scrollbar-width: none;
+}
+/* what a function returns: grows to fill the node, at least one line */
+.node.call .var-box.result {
+  flex: 1 1 0;
+}
+.var-box.result .var-body {
+  flex-direction: column;
+  align-items: stretch;
+}
+.var-box.result .field-box.wired {
+  flex: 1 1 0;
+  max-height: none;
+}
+.field-box.wired.number {
+  text-align: right;
+}
+.toggle.wired {
+  cursor: default;
+}
+
+/* the side panel's list of a function's inputs and output */
+.doc {
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 2px 0;
+}
+.check > span:first-child {
+  margin-right: auto;
+}
+
+/* a node written as Python, in the side panel */
+.code {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  font: 12px / 1.4 var(--mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* the side panel's left edge: drag it to resize the panel */
+.panel-grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 6px;
+  cursor: ew-resize;
+}
+.panel-grip:hover {
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+/* a node's statement, when the node failed */
+.code .error {
+  color: var(--error);
 }

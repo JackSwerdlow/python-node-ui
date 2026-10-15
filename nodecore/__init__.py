@@ -4,9 +4,12 @@ Example:
 ```
 register(my_function)
 results = run_graph({
-    "node_a": {
-        "fn": "my_function",
-        "args": {"x": 1},
+    "result": {
+        "statement": "assign",
+        "value": {
+            "call": "my_function",
+            "args": {"x": 1},
+        },
     },
 })
 ```

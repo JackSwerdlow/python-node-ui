@@ -1,4 +1,4 @@
 {
-  "input": {"fn": "text", "args": {"text": "a,b,c"}, "pos": [0, 0]},
-  "split": {"fn": "split_text", "args": {"text": {"ref": "input"}}, "pos": [320, 0]}
+  "input": {"statement": "assign", "value": {"call": "text", "args": {"text": "a,b,c"}}, "pos": [0, 0]},
+  "split": {"statement": "assign", "value": {"call": "split_text", "args": {"text": {"ref": "input"}}}, "pos": [320, 0]}
 }

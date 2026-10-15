@@ -2,11 +2,14 @@ import type { Edge } from "@xyflow/react";
 import { toGraph } from "./graph";
 import type { AnyNode, NodeSchema, RunResult } from "./types";
 
-export async function fetchNodes(): Promise<NodeSchema[]> {
-  const res = await fetch("/api/nodes");
-  if (!res.ok) throw new Error(`Couldn't load nodes (${res.status})`);
+/** GET some JSON from the API; what: what it is, for the error message. */
+async function get<T>(url: string, what: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Couldn't load ${what} (${res.status})`);
   return res.json();
 }
+
+export const fetchNodes = () => get<NodeSchema[]>("/api/nodes", "nodes");
 
 export async function runGraph(nodes: AnyNode[], edges: Edge[]): Promise<Record<string, RunResult>> {
   const res = await fetch("/api/run", {
