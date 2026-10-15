@@ -30,7 +30,7 @@ So far:
 - **Variable**: an assignment holding one inner box. Its name and type are set in the side panel:
   `greeting: str = "hello"`. It always has a value; a new one starts as `var: str = "<enter text here>"`.
 - **Call**: a call of a registered function, an inner box per parameter, its result assigned to the node's name
-  (set in the side panel): `split = split_text(text=greeting)`.
+  (set in the side panel): `readme = read_text(path=path)`.
 
 With no node selected, the side panel shows the whole graph written as a Python script.
 
@@ -48,7 +48,7 @@ Pins come from the `.in` files: `uv pip compile requirements.in -o requirements.
     cd nodeui && pnpm build                        # once, and after UI changes
     python main.py                              # UI + API on http://127.0.0.1:8000
     python main.py --no-ui                      # just the API
-    python main.py nodes/example_workflows/split_text.json    # run a graph, no server
+    python main.py nodes/example_workflows/readme_report.json    # run a graph, no server
 
 Working on the UI: `pnpm dev` in `nodeui/` alongside `python main.py --no-ui` gives live reload
 on http://127.0.0.1:5173.
@@ -58,14 +58,14 @@ on http://127.0.0.1:5173.
 The UI sends this same JSON to the API when you press Run; `python main.py graph.json` runs it directly:
 
     {
-      "greeting": {"statement": "assign", "annotation": "str", "value": "a, b", "pos": [0, 0]},
-      "split": {"statement": "assign", "value": {"call": "split_text", "args": {"text": {"ref": "greeting"}}}}
+      "path": {"statement": "assign", "annotation": "str", "value": "README.md", "pos": [0, 0]},
+      "readme": {"statement": "assign", "value": {"call": "read_text", "args": {"path": {"ref": "path"}}}}
     }
 
 is
 
-    greeting: str = "a, b"
-    split = split_text(text=greeting)
+    path: str = "README.md"
+    readme = read_text(path=path)
 
 Each key is a node's name. Each node is a statement binding it; only `"assign"` (`name = value`) so far, `def` and
 `class` to come. A value is a literal, or a call: `{"call": function, "args": {...}}`. An argument is a literal, or

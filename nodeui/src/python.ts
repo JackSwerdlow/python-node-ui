@@ -33,7 +33,7 @@ export function statement(node: AnyNode, edges: Edge[]): string {
   return node.data.schema.output ? `${node.id} = ${call(node, edges)}` : call(node, edges);
 }
 
-/** A call node as the call it is: `split_text(text, separator=",")`. Arguments are passed as the backend passes
+/** A call node as the call it is: `count_words(text, top=3)`. Arguments are passed as the backend passes
  *  them (graph.py): by position where Python needs it, else by name; a hidden box is left out. A wire is the name
  *  of the node it comes from. */
 export function call(node: CallNode, edges: Edge[]): string {

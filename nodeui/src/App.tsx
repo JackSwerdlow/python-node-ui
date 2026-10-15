@@ -15,10 +15,10 @@ import { type ReactNode, useEffect, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import "./styles.css";
 
-import { fetchNodes, runGraph } from "./api";
+import { fetchNodes, fetchWorkflow, fetchWorkflows, runGraph } from "./api";
 import { CallSettings, CallView } from "./Call";
 import { Code } from "./Code";
-import { freeName, newCallData, STARTING_VALUE } from "./graph";
+import { freeName, fromGraph, newCallData, STARTING_VALUE } from "./graph";
 import { script } from "./python";
 import type { AnyNode, NodeSchema } from "./types";
 import { VariableSettings, VariableView } from "./Variable";
@@ -27,19 +27,35 @@ const nodeTypes = { call: CallView, variable: VariableView };
 
 function Editor() {
   const [schemas, setSchemas] = useState<NodeSchema[]>([]);
+  const [workflows, setWorkflows] = useState<string[]>([]);
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [showPalette, setShowPalette] = useState(true);
   const [panelWidth, setPanelWidth] = useState(300);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
 
   useEffect(() => {
     fetchNodes()
       .then(setSchemas)
       .catch((err: Error) => setError(err.message));
+    fetchWorkflows()
+      .then(setWorkflows)
+      .catch((err: Error) => setError(err.message));
   }, []);
+
+  const loadWorkflow = async (name: string) => {
+    setError(null);
+    try {
+      const graph = fromGraph(await fetchWorkflow(name), schemas);
+      setNodes(graph.nodes);
+      setEdges(graph.edges);
+      setTimeout(() => fitView(), 0); // after the new nodes are drawn
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
 
   // One connection per input: a new one replaces the old.
   const onConnect = (c: Connection) =>
@@ -112,6 +128,16 @@ function Editor() {
           <button type="button" className="primary" onClick={run} disabled={running || nodes.length === 0}>
             {running ? "Running…" : "Run graph"}
           </button>
+          <select value="" onChange={(e) => loadWorkflow(e.target.value)} disabled={workflows.length === 0}>
+            <option value="" disabled>
+              Load workflow
+            </option>
+            {workflows.map((w) => (
+              <option key={w} value={w}>
+                {w}
+              </option>
+            ))}
+          </select>
           {error && <span className="message error">{error}</span>}
         </div>
 

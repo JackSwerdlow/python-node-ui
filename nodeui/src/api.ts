@@ -1,6 +1,6 @@
 import type { Edge } from "@xyflow/react";
 import { toGraph } from "./graph";
-import type { AnyNode, NodeSchema, RunResult } from "./types";
+import type { AnyNode, GraphFile, NodeSchema, RunResult } from "./types";
 
 /** GET some JSON from the API; what: what it is, for the error message. */
 async function get<T>(url: string, what: string): Promise<T> {
@@ -10,6 +10,9 @@ async function get<T>(url: string, what: string): Promise<T> {
 }
 
 export const fetchNodes = () => get<NodeSchema[]>("/api/nodes", "nodes");
+export const fetchWorkflows = () => get<string[]>("/api/workflows", "workflows");
+export const fetchWorkflow = (name: string) =>
+  get<GraphFile>(`/api/workflows/${encodeURIComponent(name)}`, `workflow ${name}`);
 
 export async function runGraph(nodes: AnyNode[], edges: Edge[]): Promise<Record<string, RunResult>> {
   const res = await fetch("/api/run", {

@@ -1,0 +1,6 @@
+{
+  "path": {"statement": "assign", "annotation": "str", "value": "README.md", "pos": [0, 0]},
+  "readme": {"statement": "assign", "value": {"call": "read_text", "args": {"path": {"ref": "path"}}}, "pos": [320, 0]},
+  "top_words": {"statement": "assign", "value": {"call": "count_words", "args": {"text": {"ref": "readme"}, "top": 3}}, "pos": [640, 0]},
+  "report": {"statement": "assign", "value": {"call": "format_text", "args": {"template": "Top words in {file}: {words}", "file": {"ref": "path"}, "words": {"ref": "top_words"}}}, "pos": [960, 0]}
+}

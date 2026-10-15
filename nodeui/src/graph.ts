@@ -1,5 +1,5 @@
 import type { Edge } from "@xyflow/react";
-import type { AnyNode, CallNode, GraphFile, InputSchema, NodeSchema, ValueType } from "./types";
+import type { AnyNode, Call, CallNode, GraphFile, InputSchema, NodeSchema, ValueType } from "./types";
 
 /** The canvas as a graph file (see README): typed values stay values, wires become {ref} arguments. */
 export function toGraph(nodes: AnyNode[], edges: Edge[]): GraphFile {
@@ -29,6 +29,59 @@ export function toGraph(nodes: AnyNode[], edges: Edge[]): GraphFile {
     }),
   );
 }
+
+/** A graph file onto the canvas: the reverse of toGraph. */
+export function fromGraph(graph: GraphFile, schemas: NodeSchema[]): { nodes: AnyNode[]; edges: Edge[] } {
+  const nodes: AnyNode[] = [];
+  const edges: Edge[] = [];
+  for (const [id, node] of Object.entries(graph)) {
+    const [x, y] = node.pos ?? [0, 0];
+    const position = { x, y };
+    const value = node.value;
+    if (!isCall(value)) {
+      if (!node.annotation) throw new Error(`Node ${id}: a variable needs an annotation (str, int, float or bool)`);
+      nodes.push({ id, type: "variable", position, data: { annotation: node.annotation, value } });
+      continue;
+    }
+    const schema = schemas.find((s) => s.name === value.call);
+    if (!schema) throw new Error(`Node ${id}: unknown function ${value.call}`);
+    const wire = (source: string, handle: string) =>
+      edges.push({
+        id: `${source}->${id}.${handle}`,
+        source,
+        sourceHandle: "result",
+        target: id,
+        targetHandle: handle,
+      });
+    // A value in the file shows its box. A wired **kwargs item gets a value under its wire, so it has a slot.
+    const kwargs = schema.inputs.find((i) => i.kind === "var_keyword");
+    const { values, shown, showResult } = newCallData(schema);
+    for (const [name, arg] of Object.entries(value.args ?? {})) {
+      const type = (schema.inputs.find((i) => i.name === name) ?? kwargs)?.type ?? "";
+      const under = startingValue(type);
+      if (isRef(arg)) {
+        wire(arg.ref, name);
+        values[name] = under;
+      } else if (Array.isArray(arg)) {
+        values[name] = arg.map((item, i) => {
+          if (!isRef(item)) return item;
+          wire(item.ref, `${name}.${i}`);
+          return under;
+        });
+      } else {
+        values[name] = arg;
+        shown[name] = true;
+      }
+    }
+    nodes.push({ id, type: "call", position, width: 220, data: { schema, values, shown, showResult } });
+  }
+  return { nodes, edges };
+}
+
+const isCall = (value: unknown): value is Call => typeof value === "object" && value !== null && "call" in value;
+
+const isRef = (value: unknown): value is { ref: string } =>
+  typeof value === "object" && value !== null && "ref" in value;
 
 /** A new call node. A parameter whose type has a box shows it if it has a default, holding the default; one
  *  with no default has its box hidden, holding its type's starting value for when it's shown. *args starts with no
