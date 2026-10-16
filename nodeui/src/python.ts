@@ -1,12 +1,13 @@
 /** Nodes written as Python, read from the nodes alone (see README): a function's signature, each node's statement,
- *  and the whole graph as a script. A node's id is its Python name: a variable's, or what a call is assigned to. */
+ *  a subgraph's def, and the whole graph as a script. A node's id is its Python name: a variable's, what a call is
+ *  assigned to, or a subgraph's def. */
 import type { Edge } from "@xyflow/react";
-import { hasDefault } from "./graph";
-import type { AnyNode, CallNode, InputSchema, NodeSchema, VariableNode } from "./types";
+import { hasDefault, outputsOf, refName, schemaOf } from "./graph";
+import type { AnyNode, CallNode, InputSchema, NodeSchema, SubgraphNode, VariableNode } from "./types";
 
 /** `def name(params) -> type: ...`: what's known of a registered function (its body is in its code, not the nodes).
- *  On one line if that fits the panel, else a parameter per line. */
-export function signature(schema: NodeSchema): string {
+ *  On one line if it fits in LINE_LENGTH (indented by indent), else a parameter per line. */
+export function signature(schema: NodeSchema, indent = 0): string {
   const params: string[] = [];
   schema.inputs.forEach((i, n) => {
     const before = schema.inputs.slice(0, n);
@@ -18,27 +19,35 @@ export function signature(schema: NodeSchema): string {
   });
   const returns = schema.output ?? "None";
   const line = `def ${schema.name}(${params.join(", ")}) -> ${returns}: ...`;
-  if (line.length <= 40) return line;
+  if (indent + line.length <= LINE_LENGTH) return line;
   return `def ${schema.name}(\n${params.map((p) => `    ${p},`).join("\n")}\n) -> ${returns}: ...`;
 }
+
+/** How long a line can be before it's split, as ruff splits it (line-length in pyproject.toml). A line too long for
+ *  the panel wraps there instead (see Code). */
+const LINE_LENGTH = 120;
 
 /** `name: str = "hello"` */
 export const variableLine = (node: VariableNode) =>
   `${node.id}: ${node.data.annotation} = ${literal(node.data.value, node.data.annotation)}`;
 
-/** A node's statement: a variable's line, or a call node's call assigned to its name (just the call if the
- *  function returns nothing). */
-export function statement(node: AnyNode, edges: Edge[]): string {
+/** A node's statement: a variable's line, or a call (a subgraph's: of its def) assigned to its outputs' names (a
+ *  call node's is its own): just the call if it returns nothing. */
+export function statement(node: CallNode | VariableNode | SubgraphNode, nodes: AnyNode[], edges: Edge[]): string {
   if (node.type === "variable") return variableLine(node);
-  return node.data.schema.output ? `${node.id} = ${call(node, edges)}` : call(node, edges);
+  const names = outputsOf(node).map((o) => o.name);
+  return names.length ? `${names.join(", ")} = ${call(node, nodes, edges)}` : call(node, nodes, edges);
 }
 
-/** A call node as the call it is: `count_words(text, top=3)`. Arguments are passed as the backend passes
- *  them (graph.py): by position where Python needs it, else by name; a hidden box is left out. A wire is the name
- *  of the node it comes from. */
-export function call(node: CallNode, edges: Edge[]): string {
-  const { schema, values, shown } = node.data;
-  const wires = new Map(edges.filter((e) => e.target === node.id).map((e) => [e.targetHandle ?? "", e.source]));
+/** A call or subgraph node as the call it is: `count_words(text, top=3)`. Arguments are passed as the backend
+ *  passes them (graph.py): by position where Python needs it, else by name; a hidden box is left out. A wire is the
+ *  name it carries. */
+export function call(node: CallNode | SubgraphNode, nodes: AnyNode[], edges: Edge[]): string {
+  const schema = schemaOf(node);
+  const { values, shown } = node.data;
+  const wires = new Map(
+    edges.filter((e) => e.target === node.id).map((e) => [e.targetHandle ?? "", refName(e, nodes)]),
+  );
   const arg = (input: InputSchema, socket: string, value: unknown): string | undefined =>
     wires.get(socket) ?? (value === undefined ? undefined : literal(value, input.type));
 
@@ -72,33 +81,74 @@ export function call(node: CallNode, edges: Edge[]): string {
   return `${schema.name}(${[...positional.map((p) => p.text), ...keyword].join(", ")})`;
 }
 
+/** A subgraph's def: its signature, its body's statements (as a script), then what's wired into its Outputs node
+ *  returned (more than one: a tuple). indent: how far it's indented (inside another def). */
+export function def(node: SubgraphNode, indent = 0): string[] {
+  const { nodes, edges } = node.data.body;
+  const returned = outputsOf(node).map((o) => o.name);
+  const body = join(blocks(nodes, edges, indent + 4), false).map((line) => line.text);
+  if (returned.length) body.push(`return ${returned.join(", ")}`);
+  const lines = body.length ? body : ["pass"];
+  const header = signature(schemaOf(node), indent).replace(/ \.\.\.$/, "");
+  return [...header.split("\n"), ...lines.map((t) => (t ? `    ${t}` : ""))];
+}
+
 /** A line of Python, and the node it's the statement of (if it is one). */
 export interface Line {
   text: string;
   node?: AnyNode;
 }
 
-/** The whole graph as a Python script: imports (registering a function is importing it), then each node's
- *  statement, in blocks by depth: a node's depth is the longest chain of wires leading to it, so each block uses
- *  only names from the blocks above it. */
+/** The whole graph as a Python script: imports (registering a function is importing it), then its statements. */
 export function script(nodes: AnyNode[], edges: Edge[]): Line[] {
   const modules = new Map<string, Set<string>>();
-  for (const n of nodes)
-    if (n.type === "call")
-      modules.set(n.data.schema.module, (modules.get(n.data.schema.module) ?? new Set()).add(n.data.schema.name));
+  const find = (nodes: AnyNode[]) => {
+    for (const n of nodes) {
+      if (n.type === "call")
+        modules.set(n.data.schema.module, (modules.get(n.data.schema.module) ?? new Set()).add(n.data.schema.name));
+      if (n.type === "subgraph") find(n.data.body.nodes);
+    }
+  };
+  find(nodes);
   const imports = [...modules]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([module, fns]) => `from ${module} import ${[...fns].sort().join(", ")}`);
+    .map(([module, fns]) => ({ text: `from ${module} import ${[...fns].sort().join(", ")}` }));
+  return join([...(imports.length ? [{ lines: imports, isDef: false }] : []), ...blocks(nodes, edges)], true);
+}
 
+/** A block of lines, and whether it's a def. */
+interface Block {
+  lines: Line[];
+  isDef: boolean;
+}
+
+/** A canvas's statements, in blocks: each subgraph's def, then each node's statement, by depth: a node's depth is
+ *  the longest chain of wires leading to it, so each block uses only names from the blocks above it. indent: how
+ *  far they're indented (in a def's body). */
+function blocks(nodes: AnyNode[], edges: Edge[], indent = 0): Block[] {
+  const defs = nodes
+    .filter((n) => n.type === "subgraph")
+    .map((n) => ({ lines: def(n, indent).map((text): Line => ({ text })), isDef: true }));
   const depth = depths(nodes, edges);
-  const blocks: Line[][] = [];
+  const byDepth: Line[][] = [];
   // Within a block: variables first, then as the nodes are listed.
-  for (const n of [...nodes.filter((n) => n.type === "variable"), ...nodes.filter((n) => n.type === "call")]) {
+  const kinds = ["variable", "call", "subgraph"] as const;
+  for (const n of kinds.flatMap((kind) => nodes.filter((n) => n.type === kind))) {
+    if (n.type === "inputs" || n.type === "outputs") continue;
     const d = depth.get(n.id) ?? 0;
-    blocks[d] = [...(blocks[d] ?? []), { text: statement(n, edges), node: n }];
+    byDepth[d] = [...(byDepth[d] ?? []), { text: statement(n, nodes, edges), node: n }];
   }
-  const parts = [imports.map((text) => ({ text })), ...blocks.filter(Boolean)].filter((b) => b.length);
-  return parts.flatMap((block, i) => (i === 0 ? block : [{ text: "" }, ...block])); // a blank line between blocks
+  return [...defs, ...byDepth.filter(Boolean).map((lines) => ({ lines, isDef: false }))];
+}
+
+/** Blocks one after another, a blank line between them; as ruff writes it, two around a def at the top level (top),
+ *  one around a def inside another. */
+function join(parts: Block[], top: boolean): Line[] {
+  return parts.flatMap((part, i) => {
+    if (i === 0) return part.lines;
+    const gap = top && (part.isDef || parts[i - 1].isDef) ? 2 : 1;
+    return [...Array.from({ length: gap }, () => ({ text: "" })), ...part.lines];
+  });
 }
 
 /** Each node's depth: 0 if nothing is wired into it, else one more than the deepest node wired into it. */

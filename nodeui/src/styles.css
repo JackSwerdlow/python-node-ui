@@ -455,6 +455,12 @@ input[type="number"].field-box::-webkit-inner-spin-button {
   white-space: pre-wrap;
   word-break: break-word;
 }
+/* a line of it: as wide as the panel, so its wrapped part can be indented (and the newlines between lines are
+   text, so copying it keeps them) */
+.code > span {
+  display: inline-block;
+  width: 100%;
+}
 
 /* the side panel's left edge: drag it to resize the panel */
 .panel-grip {
@@ -473,4 +479,35 @@ input[type="number"].field-box::-webkit-inner-spin-button {
 /* a node's statement, when the node failed */
 .code .error {
   color: var(--error);
+}
+
+/* a subgraph, and inside it its Inputs and Outputs nodes: their titles tinted purple */
+.node.subgraph header,
+.node.io header {
+  background: #ece5f6;
+}
+/* the Outputs node's empty socket, to wire a new output into */
+.node.io .var-box.empty {
+  border-style: dashed;
+}
+.node.io .var-box.empty .var-head {
+  background: none;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* the toolbar's path to the open subgraph */
+.where {
+  font: 12px var(--mono);
+  color: var(--muted);
+}
+
+/* a param's name and type, side by side */
+.check input:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.inspector input.type-field {
+  width: 40%;
+  font-family: var(--mono);
 }

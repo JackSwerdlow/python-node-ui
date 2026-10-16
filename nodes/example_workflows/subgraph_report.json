@@ -1,0 +1,16 @@
+{
+  "path": {"statement": "assign", "annotation": "str", "value": "README.md", "pos": [0, 0]},
+  "load_readme": {
+    "statement": "subgraph",
+    "params": {"path": "str"},
+    "body": {
+      "readme": {"statement": "assign", "value": {"call": "read_text", "args": {"path": {"ref": "path"}}}, "pos": [0, 0]},
+      "top_words": {"statement": "assign", "value": {"call": "count_words", "args": {"text": {"ref": "readme"}, "top": 3}}, "pos": [320, 0]}
+    },
+    "returns": ["readme", "top_words"],
+    "args": {"path": {"ref": "path"}},
+    "io_pos": {"@inputs": [-320, 0], "@outputs": [640, 0]},
+    "pos": [320, 0]
+  },
+  "report": {"statement": "assign", "value": {"call": "format_text", "args": {"template": "Top words in {file}: {words}", "file": {"ref": "path"}, "words": {"ref": "top_words"}}}, "pos": [700, 0]}
+}

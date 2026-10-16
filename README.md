@@ -17,7 +17,7 @@ Python code is words arranged by syntax: the words name things and hold values, 
 order and indentation, gives the structure (this is an assignment, this a call, this a class). Nodes split the
 same way:
 
-- **An outer box is structure.** A statement (an assignment so far, later a `def` or a `class`) and how the boxes
+- **An outer box is structure.** A statement (an assignment, a subgraph's `def`, later a `class`) and how the boxes
   inside it relate. It's what syntax and indentation are to Python.
 - **An inner box is a typed slot.** Its type picks how you fill it: a text box (str), a number box (int, float), a
   toggle (bool); any other type only by a wire. It holds a value, or a wire.
@@ -31,6 +31,11 @@ So far:
   `greeting: str = "hello"`. It always has a value; a new one starts as `var: str = "<enter text here>"`.
 - **Call**: a call of a registered function, an inner box per parameter, its result assigned to the node's name
   (set in the side panel): `readme = read_text(path=path)`.
+- **Subgraph**: a `def` whose body is a graph, and a call of it. Outside, it's a call node (its function read from
+  its body), plus **Open subgraph**, which shows its body on the canvas (**◀ Back** to leave). Inside are its
+  portals: **Inputs** (its params: `+ input`, names and types in the side panel) and **Outputs** (wire anything into
+  its empty socket to return it, under the name and type it already has). Its body sees only its params; its
+  outputs are names where the subgraph is: `readme, top_words = load_readme(path=path)`.
 
 With no node selected, the side panel shows the whole graph written as a Python script.
 
@@ -67,9 +72,33 @@ is
     path: str = "README.md"
     readme = read_text(path=path)
 
-Each key is a node's name. Each node is a statement binding it; only `"assign"` (`name = value`) so far, `def` and
+Each key is a node's name. Each node is a statement binding it: `"assign"` (`name = value`) or `"subgraph"`;
 `class` to come. A value is a literal, or a call: `{"call": function, "args": {...}}`. An argument is a literal, or
-`{"ref": name}`, a wire from that node. Arguments left out use the function's defaults. `"pos"` is only for the UI.
+`{"ref": name}`, a wire carrying that name. Arguments left out use the function's defaults. `"pos"` is only for the
+UI.
+
+A subgraph (see `nodes/example_workflows/subgraph_report.json`):
+
+    "load_readme": {
+      "statement": "subgraph",
+      "params": {"path": "str"},
+      "body": {"readme": {"statement": "assign", "value": {"call": "read_text", "args": {"path": {"ref": "path"}}}}},
+      "returns": ["readme"],
+      "args": {"path": "README.md"},
+      "io_pos": {"@inputs": [-320, 0], "@outputs": [320, 0]}
+    }
+
+is
+
+    def load_readme(path: str) -> str:
+        readme = read_text(path=path)
+        return readme
+
+    readme = load_readme(path="README.md")
+
+It runs as a call does, its def the function. `"body"` is a graph, wired to its params by name. `"returns"`: the
+names returned, bound where the subgraph is; more than one returns a tuple. `"io_pos"` (the Inputs and Outputs
+nodes') is only for the UI.
 
 ## Add nodes
 

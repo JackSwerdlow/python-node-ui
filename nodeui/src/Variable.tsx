@@ -3,7 +3,7 @@
 import { Handle, type NodeProps, Position, useReactFlow } from "@xyflow/react";
 import { type ReactNode, useState } from "react";
 import { Code } from "./Code";
-import { isName, STARTING_VALUE, VALUE_TYPES } from "./graph";
+import { isName, STARTING_VALUE, scopeNames, VALUE_TYPES } from "./graph";
 import { variableLine } from "./python";
 import { useResize } from "./Resize";
 import type { AnyNode, ValueType, VariableNode } from "./types";
@@ -100,13 +100,16 @@ export function VariableSettings({ node }: { node: VariableNode }) {
   );
 }
 
-/** A node's Python name (its id): a variable's, or what a call node's result is assigned to. Renaming it renames
- *  every use (its wires follow). It can't be another node's, or a function's in the graph (that would hide it). */
+/** A node's Python name (its id): a variable's, what a call node's result is assigned to, or a subgraph's def.
+ *  Renaming it renames every use (its wires follow). It can't be a name already in use (see scopeNames). */
 export function NameField({ id }: { id: string }) {
   const { setNodes, setEdges, getNodes } = useReactFlow<AnyNode>();
   const [name, setName] = useState(id);
-  const taken = (n: string) => getNodes().some((m) => m.id === n || (m.type === "call" && m.data.schema.name === n));
-  const problem = !isName(name) ? "Not a Python name" : name !== id && taken(name) ? `${name} is taken` : null;
+  const problem = !isName(name)
+    ? "Not a Python name"
+    : name !== id && scopeNames(getNodes()).has(name)
+      ? `${name} is taken`
+      : null;
   const commit = () => {
     if (problem || name === id) return;
     setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, id: name } : n)));
